@@ -1,12 +1,22 @@
 public class HLL {
-    byte[] registers;
+    // below variables need to be serialized
     int p;
     int r;
+    byte[] registers;
+
+    // below variables are derived
     int m;
+
+    // below are constants
+    static final byte BIT_MASK_2 = 3;
+    static final byte BIT_MASK_4 = 15;
+    static final byte BIT_MASK_6 = 63;
+    static final byte BIT_MASK_8 = (byte) 255;
 
     HLL(int p, int r) {
         assert(p >= 4 && p <= 30);
         assert(r == 4 || r == 6 || r == 8);
+
         this.p = p;
         this.r = r;
         this.m = r * (1 << p) >> 3;
@@ -27,15 +37,33 @@ public class HLL {
     byte readRegister(int index) {
         byte value = 0;
 
-        for(int i=0; i < r; i++) {
-            int byteIndex = (index + i) / 8;
-            int bitIndex = (index + i) % 8;
-            if(byteIndex == 8192)
-                byteIndex = 8192;
-            byte bit = (byte) ((registers[byteIndex] >>> (7 - bitIndex)) & 1);
-            value = (byte) ((value << 1) | bit);
-        }
+//        for(int i=0; i < r; i++) {
+//            int byteIndex = (index + i) / 8;
+//            int bitIndex = (index + i) % 8;
+//            byte bit = (byte) ((registers[byteIndex] >>> (7 - bitIndex)) & 1);
+//            value = (byte) ((value << 1) | bit);
+//        }
 
+        int end = index + r - 1;
+        int firstByte = index / 8;
+        int secondByte = end / 8;
+
+        int secondBitOffset = 7 - (end % 8);
+
+        if(firstByte == secondByte) {
+            // bits packed in single byte
+            byte MASK = (r == 4) ? BIT_MASK_4 : ((r == 6) ? BIT_MASK_6 : BIT_MASK_8);
+            value = (byte) ((this.registers[firstByte] >>> secondBitOffset) & MASK);
+        }
+        else {
+            // bits packed in two bytes
+            int firstBitOffset = 7 - (index % 8);
+            // as we only support r = 6 which can be misaligned no need to check other things
+            byte MASK_1 = (firstBitOffset == 2) ? BIT_MASK_2 : BIT_MASK_4;
+            byte MASK_2 = (secondBitOffset == 6) ? BIT_MASK_2 : BIT_MASK_4;
+            value = (byte) ((this.registers[firstByte] & MASK_1) << ((end % 8) + 1));
+            value = (byte) (value | (this.registers[secondByte] >>> secondBitOffset) & MASK_2);
+        }
         return value;
     }
 
@@ -108,7 +136,7 @@ public class HLL {
         }
 
         double rawEstimate = alphaM * M * M * (1 / sum);
-        System.err.println(rawEstimate);
+//        System.err.println(rawEstimate);
 
         if(rawEstimate <= (5.0 * M / 2.0) && zeroRegisters > 0) {
             rawEstimate = M * Math.log(M / zeroRegisters);
@@ -161,6 +189,5 @@ public class HLL {
             System.err.printf("reg %2d: %6d%n", i, hist[i]);
         double zero = hist[0];
         System.err.println("zeroRegs=" + zero);
-
     }
 }
