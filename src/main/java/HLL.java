@@ -101,7 +101,16 @@ public class HLL {
                 zeroRegisters++;
             sum = sum + Math.pow(2, -k);
         }
-        double alphaM = 0.7213 / (1 + (1.079 / M));
+        double alphaM = getAlphaM((int) M);
+
+        if(M == 16)
+            alphaM = 0.673;
+        else if (M == 32) {
+            alphaM = 0.697;
+        } else if (M == 64) {
+            alphaM = 0.709;
+        }
+
         double rawEstimate = alphaM * M * M * (1 / sum);
         System.err.println(rawEstimate);
 
@@ -112,6 +121,19 @@ public class HLL {
         }
 
         return (long) rawEstimate;
+    }
+
+    private double getAlphaM(int M) {
+        switch (M) {
+            case 16:
+                return 0.673;
+            case 32:
+                return 0.697;
+            case 64:
+                return 0.709;
+            default:
+                return 0.7213 / (1 + (1.079 / M));
+        }
     }
 
     byte[] serialize() {
