@@ -52,16 +52,16 @@ public class HLL {
         if (firstByteIndex == secondByteIndex) {
             // bits packed in single byte
             byte MASK = (r == 4) ? BIT_MASK_4 : ((r == 6) ? BIT_MASK_6 : BIT_MASK_8);
-            value = (byte) ((this.registers[firstByteIndex] >>> lastBitOffset) & MASK);
-        } else {
-            // bits packed in two bytes
-            int firstBitOffset = 7 - (index & 7);
-            // as we only support r = 6 which can be misaligned no need to check other things
-            byte MASK_1 = (firstBitOffset == 1) ? BIT_MASK_2 : BIT_MASK_4;
-            byte MASK_2 = (lastBitOffset == 6) ? BIT_MASK_2 : BIT_MASK_4;
-            value = (byte) ((this.registers[firstByteIndex] & MASK_1) << ((end & 7) + 1));
-            value = (byte) (value | (this.registers[secondByteIndex] >>> lastBitOffset) & MASK_2);
+            return (byte) ((this.registers[firstByteIndex] >>> lastBitOffset) & MASK);
         }
+
+        // bits packed in two bytes
+        int firstBitOffset = 7 - (index & 7);
+        // as we only support r = 6 which can be misaligned no need to check other things
+        byte MASK_1 = (firstBitOffset == 1) ? BIT_MASK_2 : BIT_MASK_4;
+        byte MASK_2 = (lastBitOffset == 6) ? BIT_MASK_2 : BIT_MASK_4;
+        value = (byte) ((this.registers[firstByteIndex] & MASK_1) << ((end & 7) + 1));
+        value = (byte) (value | (this.registers[secondByteIndex] >>> lastBitOffset) & MASK_2);
         return value;
     }
 
@@ -77,31 +77,24 @@ public class HLL {
             byte MASK = (r == 4) ? BIT_MASK_4 : ((r == 6) ? BIT_MASK_6 : BIT_MASK_8);
             this.registers[firstByteIndex] &= (byte) ~(MASK << lastBitOffset);
             this.registers[firstByteIndex] |= (byte) (value << lastBitOffset);
+            return;
         }
-        else {
-            // bits packed in two bytes
-            int firstBitOffset = 7 - (index & 7);
-            byte MASK_1 = (firstBitOffset == 1) ? BIT_MASK_2 : BIT_MASK_4;
-            byte MASK_2 = (lastBitOffset == 6) ? BIT_MASK_2 : BIT_MASK_4;
 
-            this.registers[firstByteIndex] &= (byte) ~MASK_1;
-            this.registers[firstByteIndex] |= (byte) (value >>> ((end & 7) + 1));
-            this.registers[secondsByteIndex] &= (byte) ~(MASK_2 << lastBitOffset);
-            this.registers[secondsByteIndex] |= (byte) (value << lastBitOffset);
-        }
+        // bits packed in two bytes
+        int firstBitOffset = 7 - (index & 7);
+        byte MASK_1 = (firstBitOffset == 1) ? BIT_MASK_2 : BIT_MASK_4;
+        byte MASK_2 = (lastBitOffset == 6) ? BIT_MASK_2 : BIT_MASK_4;
+
+        this.registers[firstByteIndex] &= (byte) ~MASK_1;
+        this.registers[firstByteIndex] |= (byte) (value >>> ((end & 7) + 1));
+        this.registers[secondsByteIndex] &= (byte) ~(MASK_2 << lastBitOffset);
+        this.registers[secondsByteIndex] |= (byte) (value << lastBitOffset);
     }
 
     void add(long value) {
-        int cnt = 0;
-
         int bucket = (int) (value >>> (64 - p));
-        value = (value << p) >>> p;
-        while(value > 0) {
-            cnt++;
-            if((value & 1) == 1)
-                break;
-            value = value >>> 1;
-        }
+        value = value | 1L << (64 - p);
+        int cnt = Long.numberOfTrailingZeros(value) + 1;
 
         int maxBucketValue = ((1 << r) - 1);
         if(cnt > maxBucketValue)
@@ -117,8 +110,8 @@ public class HLL {
     void merge(HLL other) {
         assert(this.m == other.m);
 
-        int totalBuckets = (m * 8) / r;
-        for(int i=0; i<totalBuckets; i++) {
+        int M = (m * DT_WIDTH) / r;
+        for(int i = 0; i< M; i++) {
             int a = this.readRegister(i * r) & 0xFF;
             int b = other.readRegister(i * r) & 0xFF;
             if(a < b) {

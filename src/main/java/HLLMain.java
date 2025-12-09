@@ -2,7 +2,7 @@ import net.openhft.hashing.LongHashFunction;
 
 import java.util.Random;
 
-public class Main {
+public class HLLMain {
     public static void main(String[] args) {
         LongHashFunction hash = LongHashFunction.xx();
         int P = 12, R = 6;
