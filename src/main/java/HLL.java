@@ -10,6 +10,7 @@ public class HLL {
     int regPerDatatype;
     int totalRegisters;
     int PAD;
+    int MASK;
 
     // below are constants
     static final double POW_2_32 = Math.pow(2, 32);
@@ -28,21 +29,24 @@ public class HLL {
         this.p = p;
         this.r = r;
         this.regPerDatatype = DT_WIDTH / r;
-        this.PAD = DT_WIDTH % r;
         this.totalRegisters = (1 << p);
         this.m = totalRegisters / regPerDatatype + (totalRegisters % regPerDatatype == 0 ? 0 : 1);
-        this.registers = new int[m];
         this.maxRegisterValue = ((1 << r) - 1);
+        this.PAD = DT_WIDTH % r;
+        this.MASK = (1 << r) - 1;
+
+        this.registers = new int[m];
     }
 
     private HLL(byte[] array) {
-        this.m = (array.length - 2) / 4;
         this.p = array[array.length - 2];
         this.r = array[array.length - 1];
-        this.maxRegisterValue = ((1 << r) - 1);
         this.regPerDatatype = DT_WIDTH / r;
-        this.PAD = DT_WIDTH % r;
         this.totalRegisters = (1 << p);
+        this.m = totalRegisters / regPerDatatype + (totalRegisters % regPerDatatype == 0 ? 0 : 1);
+        this.maxRegisterValue = ((1 << r) - 1);
+        this.PAD = DT_WIDTH % r;
+        this.MASK = (1 << r) - 1;
 
         this.registers = new int[m];
         for(int i=0; i<m; i++) {
@@ -86,7 +90,6 @@ public class HLL {
     public void merge(HLL other) {
         assert(this.m == other.m);
 
-        int MASK = (1 << r) - 1;
         for(int i = 0; i < m; ++i) {
             int word = 0;
 
@@ -100,29 +103,6 @@ public class HLL {
             this.registers[i] = word;
         }
 
-    }
-
-    public long estimate2() {
-        double M = totalRegisters;
-        double sum = 0;
-        double zeroRegisters = 0;
-
-        for(int i = 0; i < totalRegisters; i++) {
-            int k = readRegister(i) & 0xFF;
-            zeroRegisters += ((k == 0) ? 1 : 0);
-            sum = sum + PRE_POW_2_K[k];
-        }
-
-        double alphaM = getAlphaM((int) M);
-        double rawEstimate = alphaM * M * M * (1 / sum);
-
-        if(rawEstimate <= (5.0 * M / 2.0) && zeroRegisters > 0) {
-            rawEstimate = M * Math.log(M / zeroRegisters);
-        } else if(rawEstimate > ((1.0 / 30.0) * POW_2_32)) {
-            rawEstimate = - POW_2_32 * Math.log(1 - rawEstimate / POW_2_32);
-        }
-
-        return (long) rawEstimate;
     }
 
     public long estimate() {
@@ -151,7 +131,7 @@ public class HLL {
         if(rawEstimate <= (5.0 * M / 2.0) && zeroRegisters > 0) {
             rawEstimate = M * Math.log(M / zeroRegisters);
         } else if(rawEstimate > ((1.0 / 30.0) * POW_2_32)) {
-            rawEstimate = - POW_2_32 * Math.log(1 - rawEstimate / POW_2_32);
+            rawEstimate = -POW_2_32 * Math.log(1 - rawEstimate / POW_2_32);
         }
 
         return (long) rawEstimate;
