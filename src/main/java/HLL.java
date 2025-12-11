@@ -21,7 +21,7 @@ public class HLL {
         }
     }
 
-    HLL(int p, int r) {
+    public HLL(int p, int r) {
         assert(p >= 4 && p <= 30);
         assert(r == 4 || r == 6 || r == 8);
 
@@ -91,7 +91,7 @@ public class HLL {
         this.registers[secondsByteIndex] |= (byte) (value << lastBitOffset);
     }
 
-    void add(long value) {
+    public void add(long value) {
         int bucket = (int) (value >>> (64 - p));
         value = value | 1L << (64 - p);
         int cnt = Long.numberOfTrailingZeros(value) + 1;
@@ -107,7 +107,7 @@ public class HLL {
             writeRegister((byte) cnt, bucketBitPosition);
     }
 
-    void merge(HLL other) {
+    public void merge(HLL other) {
         assert(this.m == other.m);
 
         int M = (m * DT_WIDTH) / r;
@@ -120,7 +120,7 @@ public class HLL {
         }
     }
 
-    long estimate() {
+    public long estimate() {
         double M = (double) (m * DT_WIDTH) / r;
         double sum = 0;
         double zeroRegisters = 0;
@@ -156,7 +156,7 @@ public class HLL {
         }
     }
 
-    byte[] serialize() {
+    public byte[] serialize() {
         int size = m + 2;
 
         byte[] array = new byte[size];
@@ -168,7 +168,7 @@ public class HLL {
         return array;
     }
 
-    static HLL deserialize(byte[] array) {
+    public static HLL deserialize(byte[] array) {
         return new HLL(array);
     }
 
