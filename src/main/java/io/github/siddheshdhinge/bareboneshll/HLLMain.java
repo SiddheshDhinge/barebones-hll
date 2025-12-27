@@ -1,3 +1,5 @@
+package io.github.siddheshdhinge.bareboneshll;
+
 import net.openhft.hashing.LongHashFunction;
 
 import java.util.Random;
@@ -5,7 +7,7 @@ import java.util.Random;
 public class HLLMain {
     public static void main(String[] args) {
         LongHashFunction hash = LongHashFunction.xx();
-        int P = 12, R = 6;
+        int P = 12, R = 4;
 
         HLL[] arr = new HLL[50000];
         Random rand = new Random();
