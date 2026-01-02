@@ -13,7 +13,7 @@ https://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf
 ## Features
 
 - **Memory efficient**: Uses only `r × 2^p / 8` bytes
-- **Configurable precision**: Supports p=[4,30] and r={4,6,8} bits per register
+- **Configurable precision**: Supports p=[5,30] and r={4,5,6} bits per register
 - **Mergeable**: Combine multiple HLL sketches with union operation
 - **Serializable**: Compact binary format for storage and transmission
 - **Standard error**: ~1.04/√m where m = 2^p registers
@@ -49,28 +49,29 @@ HLL restored = HLL.deserialize(serialized);
 ## Parameters
 
 ### p (precision parameter)
-- **Range**: 4 to 30
+- **Range**: 5 to 30
 - **Registers**: m = 2^p
 - **Higher p** = more accuracy, more memory
 - **Recommended**: p=12 for most use cases (4096 registers, ~1.625% error)
 
 ### r (register width)
-- **Options**: 4, 6, or 8 bits
+- **Options**: 4, 5, or 6 bits
 - **Range**: Each register can store values 0 to 2^r - 1
 - **Trade-off**:
     - r=4: Minimal memory, saturates at ~16 leading zeros
-    - r=6: Good balance for most datasets
-    - r=8: Best for very large cardinalities (billions+)
+    - r=5: Good balance for most datasets
+    - r=6: Best for very large cardinalities (billions+)
 
 ## Memory Usage
 
-| p | r | Memory | Registers | Std Error |
-|---|---|--------|-----------|-----------|
-| 10 | 4 | 512 B | 1,024 | 3.25% |
-| 12 | 4 | 2 KB | 4,096 | 1.625% |
-| 12 | 6 | 3 KB | 4,096 | 1.625% |
-| 14 | 6 | 12 KB | 16,384 | 0.8125% |
-| 16 | 8 | 64 KB | 65,536 | 0.40625% |
+| p  | r | Memory | Registers | Std Error |
+| -- | - | ------ | --------- | --------- |
+| 10 | 4 | 512 B  | 1,024     | 3.25%     |
+| 12 | 4 | 2 KB   | 4,096     | 1.625%    |
+| 10 | 5 | 640 B  | 1,280     | 2.6%      |
+| 12 | 5 | 2.5 KB | 5,120     | 1.3%      |
+| 12 | 6 | 3 KB   | 4,096     | 1.625%    |
+| 14 | 6 | 12 KB  | 16,384    | 0.8125%   |
 
 Formula: `memory = r × 2^p / 8` bytes
 
@@ -94,7 +95,7 @@ For p=12, r=6:
 - Metadata: 2 bytes
 - **Total**: 3,074 bytes
 
-The register data is bit-packed, meaning registers don't align to byte boundaries when r ∈ {4,6}. The `readRegister()` and `writeRegister()` methods handle bit-level access transparently.
+The register data is bit-packed, meaning registers don't align to byte boundaries. The `readRegister()` and `writeRegister()` methods handle bit-level access transparently.
 
 ## Error Characteristics
 
