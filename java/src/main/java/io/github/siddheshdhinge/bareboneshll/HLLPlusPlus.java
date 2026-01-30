@@ -123,6 +123,7 @@ public class HLLPlusPlus {
             }
         }
 
+        sparseListIndex = k;
         return Arrays.copyOf(newSparseList, k);
     }
 
@@ -207,10 +208,14 @@ public class HLLPlusPlus {
             int registerOffset = (regPerDatatype - idx % regPerDatatype - 1) * r;
             int bucketIndex = idx / regPerDatatype;
 
-            this.registers[bucketIndex] |= val << registerOffset;
+            int bucketValue = this.registers[bucketIndex];
+            int prevValue = (bucketValue >>> registerOffset) & maxRegisterValue;
+            if(prevValue < val)
+                this.registers[bucketIndex] = (bucketValue & ~(maxRegisterValue << registerOffset)) | (val << registerOffset);
         }
 
         this.sparseList = new int[0];
+        this.sparseSet = new int[0];
         this.isSparse = false;
     }
 
@@ -581,10 +586,12 @@ public class HLLPlusPlus {
                 throw new IllegalArgumentException("HLL buffer invalid size: " + (buff.length - SERIALIZED_METADATA_FIELDS) + " expected: " + hll.m);
 
             for(int i=0; i < hll.m; i++) {
-                hll.registers[i] = ((buff[j] & 0xFF) << 24) |
-                        ((buff[j + 1] & 0xFF) << 16) |
-                        ((buff[j + 2] & 0xFF) << 8) |
-                        (buff[j + 3] & 0xFF);
+                hll.registers[i] = 
+                    ((buff[j] & 0xFF) << 24) |
+                    ((buff[j + 1] & 0xFF) << 16) |
+                    ((buff[j + 2] & 0xFF) << 8) |
+                    (buff[j + 3] & 0xFF);
+                j += 4;
             }
         }
         return hll;
